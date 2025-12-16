@@ -1,0 +1,53 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:padding="22dp"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:weightSum="1">
+
+    <ImageView
+        android:id="@+id/imgLogo"
+        android:layout_width="379dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="34dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="@string/app_name"
+        android:scaleType="fitCenter"
+        android:src="@drawable/logo2" />
+    <EditText
+        android:id="@+id/etNombre"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nombre"
+        android:inputType="textPersonName"
+        android:layout_marginBottom="24dp"/>
+
+    <Button
+        android:id="@+id/btnFacil"
+        android:layout_width="206dp"
+        android:layout_height="61dp"
+        android:textSize="22sp"
+        android:backgroundTint="#4CAF50"
+        android:text="Fácil" />
+
+    <Button
+        android:id="@+id/btnMedio"
+        android:layout_width="205dp"
+        android:layout_height="60dp"
+        android:textSize="22sp"
+        android:layout_marginTop="36dp"
+        android:backgroundTint="#FFC107"
+        android:text="Medio" />
+
+    <Button
+        android:id="@+id/btnDificil"
+        android:layout_width="206dp"
+        android:layout_height="66dp"
+        android:layout_marginTop="36dp"
+        android:backgroundTint="#D32F2F"
+        android:text="Difícil"
+        android:textSize="22sp" />
+
+</LinearLayout>

@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">MiApp</string>
+    <string name="nueva_partida">Nueva partida</string>
+    <string name="puntuaciones">Puntuaciones</string>
+    <string name="Resolver">Resolver</string>
+    <string name="salir">Salir</string>
+</resources>
