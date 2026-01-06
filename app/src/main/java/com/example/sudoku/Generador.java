@@ -9,9 +9,14 @@ public class Generador {
 
     private final Random random = new Random();
 
-     public int[][] generateFullBoard() {
+    private int[][] solution;
+
+    public int[][] generateFullBoard() {
         int[][] board = new int[9][9];
         fillBoard(board);
+
+        solution = copyBoard(board);
+
         return board;
     }
 
@@ -25,13 +30,16 @@ public class Generador {
         int removed = 0;
         for (int pos : positions) {
             if (removed >= empties) break;
+
             int r = pos / 9;
             int c = pos % 9;
+
             int backup = board[r][c];
             board[r][c] = 0;
 
             int[][] copy = copyBoard(board);
             int solutions = solveCount(copy, 2);
+
             if (solutions != 1) {
                 board[r][c] = backup;
             } else {
@@ -42,10 +50,15 @@ public class Generador {
         return board;
     }
 
+    public int[][] getSolution() {
+        return copyBoard(solution);
+    }
+
     private boolean fillBoard(int[][] board) {
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 9; col++) {
                 if (board[row][col] == 0) {
+
                     List<Integer> nums = new ArrayList<>();
                     for (int n = 1; n <= 9; n++) nums.add(n);
                     Collections.shuffle(nums, random);
@@ -73,6 +86,7 @@ public class Generador {
 
         int row = -1, col = -1;
         boolean emptyFound = false;
+
         for (int r = 0; r < 9 && !emptyFound; r++) {
             for (int c = 0; c < 9; c++) {
                 if (board[r][c] == 0) {
@@ -83,6 +97,7 @@ public class Generador {
                 }
             }
         }
+
         if (!emptyFound) {
             return foundSoFar + 1;
         }
@@ -102,8 +117,10 @@ public class Generador {
     private boolean isSafe(int[][] board, int r, int c, int num) {
         for (int i = 0; i < 9; i++) if (board[r][i] == num) return false;
         for (int i = 0; i < 9; i++) if (board[i][c] == num) return false;
+
         int sr = (r / 3) * 3;
         int sc = (c / 3) * 3;
+
         for (int i = sr; i < sr + 3; i++) {
             for (int j = sc; j < sc + 3; j++) {
                 if (board[i][j] == num) return false;
@@ -114,7 +131,9 @@ public class Generador {
 
     private int[][] copyBoard(int[][] board) {
         int[][] c = new int[9][9];
-        for (int i = 0; i < 9; i++) System.arraycopy(board[i], 0, c[i], 0, 9);
+        for (int i = 0; i < 9; i++) {
+            System.arraycopy(board[i], 0, c[i], 0, 9);
+        }
         return c;
     }
 }

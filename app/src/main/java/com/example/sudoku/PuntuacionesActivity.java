@@ -6,6 +6,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -20,7 +22,11 @@ import java.util.ArrayList;
 public class PuntuacionesActivity extends AppCompatActivity {
 
     RecyclerView recycler;
-    ArrayList<Puntuaciones> lista = new ArrayList<>();
+    Spinner spinnerDificultad;
+
+    ArrayList<Puntuaciones> listaCompleta = new ArrayList<>();
+    ArrayList<Puntuaciones> listaFiltrada = new ArrayList<>();
+
     PuntuacionesAdapter adapter;
 
     @Override
@@ -29,16 +35,51 @@ public class PuntuacionesActivity extends AppCompatActivity {
         setContentView(R.layout.puntuaciones);
 
         recycler = findViewById(R.id.recyclerPuntuaciones);
-        recycler.setLayoutManager(new LinearLayoutManager(this));
+        spinnerDificultad = findViewById(R.id.spinnerDificultad);
 
-        adapter = new PuntuacionesAdapter(lista);
+        recycler.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new PuntuacionesAdapter(listaFiltrada);
         recycler.setAdapter(adapter);
 
+        configurarSpinner();
         cargarPuntuaciones();
     }
 
-    private void cargarPuntuaciones() {
+    private void configurarSpinner() {
+        String[] opciones = {"Todas", "Fácil", "Medio", "Difícil"};
 
+        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_spinner_item,
+                opciones
+        );
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerDificultad.setAdapter(spinnerAdapter);
+
+        spinnerDificultad.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
+                filtrarPorDificultad(position);
+            }
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {
+            }
+        });
+    }
+
+    private void filtrarPorDificultad(int opcion) {
+        listaFiltrada.clear();
+
+        for (Puntuaciones p : listaCompleta) {
+            if (opcion == 0 || p.getDificultad() == opcion) {
+                listaFiltrada.add(p);
+            }
+        }
+        adapter.notifyDataSetChanged();
+    }
+
+    private void cargarPuntuaciones() {
         new Thread(() -> {
             try {
                 URL url = new URL("http://10.0.2.2:3000/verpuntuaciones");
@@ -55,19 +96,20 @@ public class PuntuacionesActivity extends AppCompatActivity {
 
                 JSONArray arr = new JSONArray(json.toString());
 
-                lista.clear();
+                listaCompleta.clear();
 
                 for (int i = 0; i < arr.length(); i++) {
                     JSONObject o = arr.getJSONObject(i);
+
                     String nombre = o.getString("nombre");
                     int minutos = o.getInt("minutos");
                     int segundos = o.getInt("segundos");
                     int dificultad = o.getInt("dificultad");
 
-                    lista.add(new Puntuaciones(nombre,minutos, segundos, dificultad));
+                    listaCompleta.add(new Puntuaciones(nombre, minutos, segundos, dificultad));
                 }
 
-                runOnUiThread(() -> adapter.notifyDataSetChanged());
+                runOnUiThread(() -> filtrarPorDificultad(spinnerDificultad.getSelectedItemPosition()));
 
             } catch (Exception e) {
                 Log.e("API", "Error cargando puntuaciones", e);

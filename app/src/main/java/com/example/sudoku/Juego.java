@@ -33,10 +33,11 @@ public class Juego extends AppCompatActivity {
     private static final int CELL_SIZE_DP = 30;
 
     private int[][] puzzle;
+    private int[][] solucion;
+
     private Chronometer cronometro;
     private GridLayout grid;
     private int dificultad = 1;
-
     private String nombre;
 
     @Override
@@ -56,6 +57,16 @@ public class Juego extends AppCompatActivity {
 
         Button btn = findViewById(R.id.btnNuevaPartida);
         btn.setOnClickListener(v -> {
+
+            if (!sudokuCompletadoYCorrecto()) {
+                Toast.makeText(
+                        Juego.this,
+                        "❌ El Sudoku no está completo o tiene errores",
+                        Toast.LENGTH_LONG
+                ).show();
+                return;
+            }
+
             long tiempoMilis = SystemClock.elapsedRealtime() - cronometro.getBase();
             new Thread(() -> enviarPuntuacion(tiempoMilis, dificultad)).start();
         });
@@ -65,19 +76,16 @@ public class Juego extends AppCompatActivity {
         int empties = obtenerEmptiesPorDificultad();
         Generador generator = new Generador();
         puzzle = generator.generatePuzzle(empties);
+        solucion = generator.getSolution();
         cargarTablero();
     }
 
     private int obtenerEmptiesPorDificultad() {
         switch (dificultad) {
-            case 1:
-                return 30;
-            case 2:
-                return 40;
-            case 3:
-                return 50;
-            default:
-                return 30;
+            case 1: return 30;
+            case 2: return 40;
+            case 3: return 50;
+            default: return 30;
         }
     }
 
@@ -91,6 +99,7 @@ public class Juego extends AppCompatActivity {
 
         for (int r = 0; r < 9; r++) {
             for (int c = 0; c < 9; c++) {
+
                 int val = puzzle[r][c];
                 GridLayout.LayoutParams params = new GridLayout.LayoutParams();
                 params.width = cellPx * 2;
@@ -129,10 +138,9 @@ public class Juego extends AppCompatActivity {
 
                     int finalR = r;
                     int finalC = c;
+
                     et.addTextChangedListener(new TextWatcher() {
-                        @Override
-                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                        }
+                        @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
                         @Override
                         public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -143,37 +151,20 @@ public class Juego extends AppCompatActivity {
                             }
 
                             int num = Integer.parseInt(input);
-                            int[][] currentBoard = new int[9][9];
-
-                            for (int i = 0; i < 9; i++) {
-                                for (int j = 0; j < 9; j++) {
-                                    TextView cell = grid.findViewById(1000 + i * 9 + j);
-                                    if (cell instanceof EditText) {
-                                        String text = ((EditText) cell).getText().toString();
-                                        currentBoard[i][j] = text.isEmpty() ? 0 : Integer.parseInt(text);
-                                    } else {
-                                        currentBoard[i][j] = puzzle[i][j];
-                                    }
-                                }
-                            }
-
-                            currentBoard[finalR][finalC] = 0;
 
                             if (dificultad == 3) {
                                 et.setTextColor(getResources().getColor(android.R.color.white));
                                 return;
                             }
 
-                            if (!isMoveValid(currentBoard, finalR, finalC, num)) {
+                            if (num != solucion[finalR][finalC]) {
                                 et.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
                             } else {
                                 et.setTextColor(getResources().getColor(android.R.color.white));
                             }
                         }
 
-                        @Override
-                        public void afterTextChanged(Editable s) {
-                        }
+                        @Override public void afterTextChanged(Editable s) {}
                     });
 
                     et.setId(1000 + r * 9 + c);
@@ -183,14 +174,24 @@ public class Juego extends AppCompatActivity {
         }
     }
 
-    private boolean isMoveValid(int[][] board, int r, int c, int num) {
-        for (int i = 0; i < 9; i++) if (board[r][i] == num) return false;
-        for (int i = 0; i < 9; i++) if (board[i][c] == num) return false;
-        int sr = (r / 3) * 3;
-        int sc = (c / 3) * 3;
-        for (int i = sr; i < sr + 3; i++)
-            for (int j = sc; j < sc + 3; j++)
-                if (board[i][j] == num) return false;
+    private boolean sudokuCompletadoYCorrecto() {
+        for (int r = 0; r < 9; r++) {
+            for (int c = 0; c < 9; c++) {
+
+                TextView cell = grid.findViewById(1000 + r * 9 + c);
+                int valor;
+
+                if (cell instanceof EditText) {
+                    String texto = ((EditText) cell).getText().toString();
+                    if (texto.isEmpty()) return false;
+                    valor = Integer.parseInt(texto);
+                } else {
+                    valor = Integer.parseInt(cell.getText().toString());
+                }
+
+                if (valor != solucion[r][c]) return false;
+            }
+        }
         return true;
     }
 
@@ -202,7 +203,6 @@ public class Juego extends AppCompatActivity {
 
         new Thread(() -> {
             try {
-                Log.d("Juego", "Intentando conectar a API...");
                 URL url = new URL("http://10.0.2.2:3000/puntuacion");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
@@ -214,41 +214,27 @@ public class Juego extends AppCompatActivity {
                         ", \"segundos\": " + segundos +
                         ", \"dificultad\": " + dificultad + " }";
 
-
                 OutputStream os = conn.getOutputStream();
                 os.write(json.getBytes("UTF-8"));
-                os.flush();
                 os.close();
 
                 int code = conn.getResponseCode();
-                Log.d("Juego", "Código de respuesta: " + code);
-
-                InputStream is = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) response.append(line);
-                reader.close();
                 conn.disconnect();
-
-                Log.d("Juego", "RESPUESTA API: " + response.toString());
 
                 runOnUiThread(() -> {
                     if (code >= 200 && code < 300) {
-                        Toast.makeText(Juego.this, "Puntuación enviada", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Puntuación enviada", Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(Juego.this, "Error al enviar puntuación", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Error al enviar puntuación", Toast.LENGTH_SHORT).show();
                     }
-                    startActivity(new Intent(Juego.this, MainActivity.class));
+                    startActivity(new Intent(this, MainActivity.class));
                 });
 
             } catch (Exception e) {
-                Log.e("Juego", "Error al enviar puntuación", e);
                 runOnUiThread(() ->
-                        Toast.makeText(Juego.this, "Error al enviar puntuación", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Error al enviar puntuación", Toast.LENGTH_SHORT).show()
                 );
             }
         }).start();
     }
-
 }
